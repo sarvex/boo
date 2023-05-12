@@ -41,5 +41,5 @@ except:
 ### unicode chars.
 
 sys.stdin = codecs.lookup('latin1')[-2](sys.stdin)
-for token in xml_l.Lexer() :
-      pass
+for _ in xml_l.Lexer():
+   pass

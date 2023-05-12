@@ -17,8 +17,7 @@ def listxint():
 	c = a*b
 	
 def dynamicDispatch():
-	a = [1, 2, 3]
-	a.append(4)
+	a = [1, 2, 3, 4]
 	
 run("int*int:", intxint)
 run("list*int:", listxint)

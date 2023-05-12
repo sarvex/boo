@@ -70,10 +70,10 @@ class Context(object):
       self.getCurrentScope().insertVariable(v,t)
   
    def getVariable(self, var):
-      t=self.getCurrentScope().getVariable(var)
-      if(t==None):
-         t=self.theGlobalScope.getVariable(var)
-      return t
+       t=self.getCurrentScope().getVariable(var)
+       if t is None:
+           t=self.theGlobalScope.getVariable(var)
+       return t
   
    def getVariableDimension(self, var):
       dim=self.getCurrentScope().getVariableDimension(var)
@@ -82,14 +82,11 @@ class Context(object):
       return dim
   
    def getVariableType(self, var):
-      t=self.getCurrentScope().getVariable(var)
-      if(t==None):
-         t=self.theGlobalScope.getVariable(var)
-      
-      if t:
-         return t.getType()
-      else:
-         return 0
+       t=self.getCurrentScope().getVariable(var)
+       if t is None:
+           t=self.theGlobalScope.getVariable(var)
+
+       return t.getType() if t else 0
   
    def isArrayVariable(self,s):
       return (self.getVariableDimension(s) > 0)
@@ -145,9 +142,8 @@ class Context(object):
   
 
    def getDTDataType(self,s,*args):
-      t = self.getVariable(s)
-      r = t.getDTDataType(*args)
-      return r
+       t = self.getVariable(s)
+       return t.getDTDataType(*args)
   
    
    def ensureVariable(self,s,t):
@@ -358,9 +354,7 @@ class DTDataTypeProxy (DTDataType):
       self.theBoss.assign(tbd)
        
    def getDimension(self,item=None):
-      if not item:
-         return self.dims
-      return self.theBoss.getDimensioned(item)
+       return self.dims if not item else self.theBoss.getDimensioned(item)
 
    def multiply(self,other):
       return self.theBoss.multiply(other)
@@ -458,11 +452,9 @@ class DTFloat(DTDataType):
       return DTInteger(None,self.getInteger())
 
    def compareTo(self, o):
-      if(getFloat() < (o).getFloat()):
-         return -1
-      if ( getFloat() > (o).getFloat()):
-         return 1
-      return 0
+       if(getFloat() < (o).getFloat()):
+          return -1
+       return 1 if ( getFloat() > (o).getFloat()) else 0
 
    def __str__(self):
       return str(self.s)
@@ -533,11 +525,9 @@ class DTInteger (DTDataType):
 
 
    def compareTo(self, o):
-      if( self.getInteger() < (o).getInteger()):
-         return -1
-      if ( self.getInteger() > (o).getInteger()):
-         return 1
-      return 0
+       if( self.getInteger() < (o).getInteger()):
+          return -1
+       return 1 if ( self.getInteger() > (o).getInteger()) else 0
 
    def __str__(self):
       return str(self.s)
@@ -588,9 +578,8 @@ class DTArray1D(DTDataType):
 
 
    def _get(self,idx1):
-      assert isinstance(idx1,int)
-      t = self.data[idx1]
-      return t
+       assert isinstance(idx1,int)
+       return self.data[idx1]
    def _set(self,item,idx1):
       assert isinstance(idx1,int)
       self.data[idx1] = item
@@ -612,26 +601,23 @@ class DTArray1D(DTDataType):
       
 
    def setDTDataType(self,i1,s):
-      idx1 = i1.getInteger() - self.base
-      if self.dim1==0:
-         self.dim1 = 10
-         self.init()
-    
-      if(idx1<=self.dim1):
-         t = self._get(idx1)
-         if not t:
-            t = self._set(self.getOne(s),idx1)
-         else:
-            t.assign(s)
+       idx1 = i1.getInteger() - self.base
+       if self.dim1==0:
+          self.dim1 = 10
+          self.init()
+
+       if (idx1<=self.dim1):
+           if t := self._get(idx1):
+               t.assign(s)
+           else:
+               t = self._set(self.getOne(s),idx1)
         
     
    def getDimension(self):
       return 1
 
    def getDimensiond(self,i):
-      if i==1:
-         return self.dim1
-      return 0
+       return self.dim1 if i==1 else 0
   
    def setDimension(self,i1):
       if isinstance(i1,int):
@@ -667,10 +653,9 @@ class DTArray2D(DTDataType):
       self.data = [None] * (self.dim2 * self.dim1)
 
    def _get(self,idx1,idx2):
-      assert isinstance(idx1,int)
-      assert isinstance(idx2,int)
-      t = self.data[idx1*self.dim1+idx2]
-      return t
+       assert isinstance(idx1,int)
+       assert isinstance(idx2,int)
+       return self.data[idx1*self.dim1+idx2]
    
    def _set(self,item,idx1,idx2):
       assert isinstance(idx1,int)
@@ -699,32 +684,28 @@ class DTArray2D(DTDataType):
       
 
    def setDTDataType(self,i1,i2,s):
-      idx1=i1.getInteger()-self.base
-      idx2=i2.getInteger()-self.base
-      if(self.dim1==0):
-         self.dim1=10
-         self.dim2=10
-         self.init()
-        
-      if idx1<=self.dim1 and idx2<=self.dim2:
-         t = self._get(idx1,idx2)
-         if not t:
-            t = self._set(self.getOne(s),idx1,idx2)
-         else:
-            t.assign(s)
-      else:
-         raise Exception("index out of range:")
+       idx1=i1.getInteger()-self.base
+       idx2=i2.getInteger()-self.base
+       if(self.dim1==0):
+          self.dim1=10
+          self.dim2=10
+          self.init()
+
+       if idx1 > self.dim1 or idx2 > self.dim2:
+           raise Exception("index out of range:")
+       if t := self._get(idx1, idx2):
+           t.assign(s)
+       else:
+           t = self._set(self.getOne(s),idx1,idx2)
         
     
    def getDimension(self):
       return 2
 
    def getDimensioned(self,i):
-      if (i==1):
-         return self.dim1
-      if (i==2):
-         return self.dim2
-      return 0
+       if (i==1):
+          return self.dim1
+       return self.dim2 if (i==2) else 0
 
    def _toint(self,item):
       if isinstance(item,int):
@@ -757,11 +738,10 @@ class DTArray3D(DTDataType):
       self.data = [None] * (self.dim1 * self.dim2 * self.dim3)
 
    def _get(self,idx1,idx2,idx3):
-      assert isinstance(idx1,int)
-      assert isinstance(idx2,int)
-      assert isinstance(idx3,int)
-      t = self.data[idx1 * (self.dim1*self.dim2) + idx2*self.dim2 + idx3]
-      return t
+       assert isinstance(idx1,int)
+       assert isinstance(idx2,int)
+       assert isinstance(idx3,int)
+       return self.data[idx1 * (self.dim1*self.dim2) + idx2*self.dim2 + idx3]
    
    def _set(self,item,idx1,idx2,idx3):
       assert isinstance(idx1,int)
@@ -789,31 +769,28 @@ class DTArray3D(DTDataType):
 
     
    def setDTDataType(self,i1,i2,i3,s):
-      idx1=i1.getInteger()-self.base
-      idx2=i2.getInteger()-self.base
-      idx3=i3.getInteger()-self.base
-      if(self.dim1==0):
-         self.dim1 = self.dim2 = self.dim3 = 10
-      self.init()
-    
-      if(idx1<=self.dim1 and idx2<=self.dim2 and idx3<=self.dim3):
-         t= self._get(idx1,idx2,idx3)
-         if not t:
-            t = self._set(self.getOne(s),idx1,idx2,idx3)
-         else:
-            t.assign(s)
+       idx1=i1.getInteger()-self.base
+       idx2=i2.getInteger()-self.base
+       idx3=i3.getInteger()-self.base
+       if(self.dim1==0):
+          self.dim1 = self.dim2 = self.dim3 = 10
+       self.init()
+
+       if (idx1<=self.dim1 and idx2<=self.dim2 and idx3<=self.dim3):
+           if t := self._get(idx1, idx2, idx3):
+               t.assign(s)
+           else:
+               t = self._set(self.getOne(s),idx1,idx2,idx3)
 
    def getDimension(self):
       return 3
 
    def getDimensioned(self,i):
-      if(i==1):
-         return self.dim1
-      if (i==2):
-         return self.dim2
-      if (i==3):
-         return self.dim3
-      return 0
+       if(i==1):
+          return self.dim1
+       if (i==2):
+          return self.dim2
+       return self.dim3 if (i==3) else 0
   
    def setDimension(self,i1,i2,i3):
       self.dim1 = i1
@@ -830,8 +807,7 @@ class Scope(object):
       self.symbolTable = HashTab()
   
    def cloneScope(self,prev):
-      newScope = Scope(prev)
-      return newScope
+       return Scope(prev)
 
   
    def insertVariable(self,v,t):
@@ -839,25 +815,14 @@ class Scope(object):
   
   
    def getVariable(self,v):
-      t=self.symbolTable.get(v.lower())
-      return t
+       return self.symbolTable.get(v.lower())
   
   
    def getVariableDimension(self,v):
-      t=self.getVariable(v)
-      
-      if t:
-         return t.getDimension()
-      else:
-         return 0
+       return t.getDimension() if (t := self.getVariable(v)) else 0
       
    def getVariableType(self,v):
-      t=self.getVariable(v)
-      
-      if t:
-         return t.getType()
-      else:
-         return 0
+       return t.getType() if (t := self.getVariable(v)) else 0
       
    def isArrayVariable(self,s):
       return (self.getVariableDimension(s) > 0)

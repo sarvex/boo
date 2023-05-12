@@ -10,11 +10,11 @@ dstdir = '@prefix@/share/@PACKAGE_NAME@-@PACKAGE_VERSION@'
 srcdir = '@abs_top_srcdir@/lib/python/antlr'
 moddir = None
 
-for d in [ dstdir, srcdir ] :
+for d in [ dstdir, srcdir ]:
    moddir = d
-   for f in [ '__init__.py','antlr.py' ] :
-      if moddir :
-         x = "%s/%s" % (moddir,f)
+   for f in [ '__init__.py','antlr.py' ]:
+      if moddir:
+         x = f"{moddir}/{f}"
          if not os.path.exists(x) :
             sys.stderr.write('notice: "%s" does not exist - going to skip dir "%s")\n' % (x,moddir))
             sys.stderr.flush()

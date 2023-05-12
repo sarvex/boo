@@ -63,8 +63,7 @@ class BinaryOperatorAST(CalcAST):
 
    def right(self):
       t = self.left();
-      if not t: return None
-      return t.getNextSibling()
+      return None if not t else t.getNextSibling()
 
    def c2(self):
       t = self.left()
@@ -125,7 +124,7 @@ class INTNode(CalcAST):
       return self.v
 
    def toString(self):
-      return " " + str(self.v)
+      return f" {str(self.v)}"
 
 
 def main():

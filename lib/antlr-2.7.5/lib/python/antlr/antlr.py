@@ -34,11 +34,7 @@ def error(fmt,*args):
         print "error: ", fmt % tuple(args)
 
 def ifelse(cond,_then,_else):
-    if cond :
-        r = _then
-    else:
-        r = _else
-    return r
+    return _then if cond else _else
 
 ###xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx###
 ###                     ANTLR Exceptions                           ###
@@ -67,16 +63,16 @@ class RecognitionException(ANTLRException):
     def __str__(self):
         buf = ['']
         if self.fileName:
-            buf.append(self.fileName + ":")
+            buf.append(f"{self.fileName}:")
         if self.line != -1:
             if not self.fileName:
                 buf.append("line ")
             buf.append(str(self.line))
             if self.column != -1:
-                buf.append(":" + str(self.column))
+                buf.append(f":{str(self.column)}")
             buf.append(":")
         buf.append(" ")
-        return str('').join(buf)
+        return ''.join(buf)
 
     __repr__ = __str__
 
@@ -104,7 +100,7 @@ class NoViableAltException(RecognitionException):
             return "unexpected end of subtree"
         assert self.node
         ### hackish, we assume that an AST contains method getText
-        return "unexpected node: %s" % (self.node.getText())
+        return f"unexpected node: {self.node.getText()}"
 
     __repr__ = __str__
 
@@ -336,7 +332,7 @@ class MismatchedTokenException(RecognitionException):
         if tokenType == INVALID_TYPE:
             sb.append("<Set of tokens>")
         elif tokenType < 0 or tokenType >= len(self.tokenNames):
-            sb.append("<" + str(tokenType) + ">")
+            sb.append(f"<{str(tokenType)}>")
         else:
             sb.append(self.tokenNames[tokenType])
 
@@ -344,13 +340,11 @@ class MismatchedTokenException(RecognitionException):
     # Returns an error message with line number/column information
     #
     def __str__(self):
-        sb = ['']
-	sb.append(RecognitionException.__str__(self))
-
+        sb = ['', RecognitionException.__str__(self)]
         if self.mismatchType == MismatchedTokenException.TOKEN:
             sb.append("expecting ")
-	    self.appendTokenName(sb, self.expecting)
-            sb.append(", found " + self.tokenText)
+            self.appendTokenName(sb, self.expecting)
+            sb.append(f", found {self.tokenText}")
         elif self.mismatchType == MismatchedTokenException.NOT_TOKEN:
             sb.append("expecting anything but '")
             self.appendTokenName(sb, self.expecting)
@@ -363,7 +357,7 @@ class MismatchedTokenException(RecognitionException):
             appendTokenName(sb, self.expecting)
             sb.append("..")
             appendTokenName(sb, self.upper)
-            sb.append(", found " + self.tokenText)
+            sb.append(f", found {self.tokenText}")
         elif self.mismatchType in [MismatchedTokenException.SET, MismatchedTokenException.NOT_SET]:
             sb.append("expecting ")
             if self.mismatchType == MismatchedTokenException.NOT_SET:
@@ -371,7 +365,7 @@ class MismatchedTokenException(RecognitionException):
             sb.append("one of (")
             for i in range(len(self.set)):
                 self.appendTokenName(sb, self.set[i])
-            sb.append("), found " + self.tokenText)
+            sb.append(f"), found {self.tokenText}")
 
         return str().join(sb).strip()
 
@@ -484,9 +478,7 @@ class Token(object):
         return "<no text>"
 
     def setText(self,text):
-        if isinstance(text,str):
-            pass
-        else:
+        if not isinstance(text, str):
             raise TypeError("Token.setText requires string argument")
         return self
 
@@ -509,17 +501,17 @@ class Token(object):
     def toString(self):
         ## not optimal
         type_ = self.type
-        if type_ == 3:
-            tval = 'NULL_TREE_LOOKAHEAD'
-        elif type_ == 1:
-            tval = 'EOF_TYPE'
+        if type_ == -1:
+            tval = 'SKIP'
         elif type_ == 0:
             tval = 'INVALID_TYPE'
-        elif type_ == -1:
-            tval = 'SKIP'
+        elif type_ == 1:
+            tval = 'EOF_TYPE'
+        elif type_ == 3:
+            tval = 'NULL_TREE_LOOKAHEAD'
         else:
             tval = type_
-        return '["%s",<%s>]' % (self.getText(),tval)
+        return f'["{self.getText()}",<{tval}>]'
 
     __str__ = toString
     __repr__ = toString
@@ -674,11 +666,7 @@ class InputBuffer(object):
         self.queue = Queue()
 
     def __str__(self):
-        return "(%s,%s,%s,%s)" % (
-           self.nMarkers,
-           self.markerOffset,
-           self.numToConsume,
-           self.queue)
+        return f"({self.nMarkers},{self.markerOffset},{self.numToConsume},{self.queue})"
 
     def __repr__(self):
         return str(self)
@@ -873,7 +861,7 @@ class TokenStreamSelector(TokenStream):
         try:
             stream = self._stmap[sname]
         except:
-            raise ValueError("TokenStream " + sname + " not found");
+            raise ValueError(f"TokenStream {sname} not found");
         return stream;
 
     def nextToken(self):
@@ -954,14 +942,12 @@ class TokenStreamHiddenTokenFilter(TokenStreamBasicFilter):
 
         p = None;
         while self.hideMask.member(self.LA(1).getType()) or \
-              self.discardMask.member(self.LA(1).getType()):
+                  self.discardMask.member(self.LA(1).getType()):
             if self.hideMask.member(self.LA(1).getType()):
-                if not p:
-                    p = self.LA(1)
-                else:
+                if p:
                     p.setHiddenAfter(self.LA(1))
                     self.LA(1).setHiddenBefore(p)
-                    p = self.LA(1)
+                p = self.LA(1)
                 self.lastHiddenToken = p
                 if not self.firstHidden:
                     self.firstHidden = p
@@ -1021,10 +1007,7 @@ class TokenStreamHiddenTokenFilter(TokenStreamBasicFilter):
 
 class StringBuffer:
     def __init__(self,string=None):
-        if string:
-            self.text = list(string)
-        else:
-            self.text = []
+        self.text = list(string) if string else []
 
     def setLength(self,sz):
         if not sz :
@@ -1034,7 +1017,7 @@ class StringBuffer:
         if sz >= self.length():
             return
         ### just reset to empty buffer
-        self.text = self.text[0:sz]
+        self.text = self.text[:sz]
 
     def length(self):
         return len(self.text)
@@ -1060,9 +1043,7 @@ class StringBuffer:
             assert (a+length) <= len(self.text)
             b = a + length
             L = self.text[a:b]
-        s = ""
-        for x in L : s += x
-        return s
+        return "".join(L)
 
     toString = getString ## alias
 
@@ -1294,7 +1275,7 @@ class CharScanner(TokenStream):
                 raise MismatchedCharException(self.LA(1), c, False, self)
 
     def match(self,item):
-        if isinstance(item,str) or isinstance(item,unicode):
+        if isinstance(item, (str, unicode)):
             return self._match_string(item)
         else:
             return self._match_bitset(item)
@@ -1365,13 +1346,13 @@ class CharScanner(TokenStream):
         if not _text:
             return
 
-        assert isinstance(_text,str) or isinstance(_text,unicode)
+        assert isinstance(_text, (str, unicode))
         _type = self.testLiteralsTable(_text,_type)
         token.setType(_type)
         return _type
 
     def testLiteralsTable(self,*args):
-        if isinstance(args[0],str) or isinstance(args[0],unicode):
+        if isinstance(args[0], (str, unicode)):
             s = args[0]
             i = args[1]
         else:
@@ -1422,14 +1403,11 @@ class CharScanner(TokenStream):
     def consume(self):
         if not self.inputState.guessing:
             c = self.LA(1)
-            if self.caseSensitive:
-                self.append(c)
-            else:
+            if not self.caseSensitive:
                 # use input.LA(), not LA(), to get original case
                 # CharScanner.LA() would toLower it.
                 c =  self.inputState.input.LA(1)
-                self.append(c)
-
+            self.append(c)
             if c and c in "\t":
                 self.tab()
             else:
@@ -1438,7 +1416,7 @@ class CharScanner(TokenStream):
 
     ## Consume chars until one matches the given char
     def consumeUntil_char(self,c):
-        while self.LA(1) != EOF_CHAR and self.LA(1) != c:
+        while self.LA(1) not in [EOF_CHAR, c]:
             self.consume()
 
     ## Consume chars until one matches the given set
@@ -1485,7 +1463,7 @@ class CharScanner(TokenStream):
         raise NoViableAltForCharException(la1,fname,line,col)
 
     def set_return_token(self,_create,_token,_ttype,_offset):
-        if _create and not _token and (not _ttype == SKIP):
+        if _create and not _token and _ttype != SKIP:
             string = self.text.getString(_offset)
             _token = self.makeToken(_ttype)
             _token.setText(string)
@@ -1540,20 +1518,16 @@ class BitSet(object):
                             "list argument")
         for x in data:
             if not isinstance(x,long):
-                raise TypeError(self,"List argument item is " +
-                                "not a long: %s" % (x))
+                raise TypeError(self, f"List argument item is not a long: {x}")
         self.data = data
 
     def __str__(self):
         bits = len(self.data) * BitSet.BITS
         s = ""
         for i in xrange(0,bits):
-            if self.at(i):
-                s += "1"
-            else:
-                s += "o"
+            s += "1" if self.at(i) else "o"
             if not ((i+1) % 10):
-                s += '|%s|' % (i+1)
+                s += f'|{i + 1}|'
         return s
 
     def __repr__(self):
@@ -1566,14 +1540,14 @@ class BitSet(object):
         if isinstance(item,int):
             return self.at(item)
 
-        if not (isinstance(item,str) or isinstance(item,unicode)):
-            raise TypeError(self,"char or unichar expected: %s" % (item))
+        if not (isinstance(item, (str, unicode))):
+            raise TypeError(self, f"char or unichar expected: {item}")
 
         ## char is a (unicode) string with at most lenght 1, ie.
         ## a char.
 
         if len(item) != 1:
-            raise TypeError(self,"char expected: %s" % (item))
+            raise TypeError(self, f"char expected: {item}")
 
         ### handle ASCII/UNICODE char
         num = ord(item)
@@ -1621,13 +1595,13 @@ class BitSet(object):
 
 def illegalarg_ex(func):
     raise ValueError(
-       "%s is only valid if parser is built for debugging" %
-       (func.func_name))
+        f"{func.func_name} is only valid if parser is built for debugging"
+    )
 
 def runtime_ex(func):
     raise RuntimeException(
-       "%s is only valid if parser is built for debugging" %
-       (func.func_name))
+        f"{func.func_name} is only valid if parser is built for debugging"
+    )
 
 ###xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx###
 ###                       TokenBuffer                              ###
@@ -1687,12 +1661,7 @@ class TokenBuffer(object):
             self.numToConsume -= 1
 
     def __str__(self):
-        return "(%s,%s,%s,%s,%s)" % (
-           self.input,
-           self.nMarkers,
-           self.markerOffset,
-           self.numToConsume,
-           self.queue)
+        return f"({self.input},{self.nMarkers},{self.markerOffset},{self.numToConsume},{self.queue})"
 
     def __repr__(self):
         return str(self)
@@ -1770,7 +1739,7 @@ class Parser(object):
         raise NotImplementedError()
 
     def _consumeUntil_type(self,tokenType):
-        while self.LA(1) != EOF_TYPE and self.LA(1) != tokenType:
+        while self.LA(1) not in [EOF_TYPE, tokenType]:
             self.consume()
 
     def _consumeUntil_bitset(self, set):
@@ -2071,8 +2040,8 @@ class TreeParser(object):
     def getTokenNames(self):
         return self.tokenNames
 
-    def match(self,t,set) :
-        assert isinstance(set,int) or isinstance(set,BitSet)
+    def match(self,t,set):
+        assert isinstance(set, (int, BitSet))
         if not t or t == ASTNULL:
             raise MismatchedTokenException(self.getTokenNames(), t,set, False)
 
@@ -2107,15 +2076,17 @@ class TreeParser(object):
     def traceIn(self,rname,t):
         self.traceDepth += 1
         self.traceIndent()
-        print("> " + rname + "(" +
-              ifelse(t,str(t),"null") + ")" +
-              ifelse(self.inputState.guessing>0,"[guessing]",""))
+        print(
+            ((f"> {rname}(" + ifelse(t, str(t), "null")) + ")")
+            + ifelse(self.inputState.guessing > 0, "[guessing]", "")
+        )
 
     def traceOut(self,rname,t):
         self.traceIndent()
-        print("< " + rname + "(" +
-              ifelse(t,str(t),"null") + ")" +
-              ifelse(self.inputState.guessing>0,"[guessing]",""))
+        print(
+            ((f"< {rname}(" + ifelse(t, str(t), "null")) + ")")
+            + ifelse(self.inputState.guessing > 0, "[guessing]", "")
+        )
         self.traceDepth -= 1
 
     ### wh: moved from ASTFactory to TreeParser
@@ -2165,8 +2136,7 @@ def cmptree(s,t,partial):
         s = s.getNextSibling()
         t = t.getNextSibling()
 
-    r = ifelse(partial,not t,not s and not t)
-    return r
+    return ifelse(partial,not t,not s and not t)
 
 ###xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx###
 ###                          AST                                   ###
@@ -2258,7 +2228,6 @@ class AST(object):
 class ASTNULLType(AST):
     def __init__(self):
         AST.__init__(self)
-        pass
 
     def getText(self):
         return "<ASTNULL>"
@@ -2282,8 +2251,7 @@ class BaseAST(AST):
 
     def addChild(self,node):
         if node:
-            t = rightmost(self.down)
-            if t:
+            if t := rightmost(self.down):
                 t.right = node
             else:
                 assert not self.down
@@ -2301,13 +2269,10 @@ class BaseAST(AST):
         sibling = self
 
         while sibling:
-            c1 = partialMatch and sibling.equalsTreePartial(target)
-            if c1:
+            if c1 := partialMatch and sibling.equalsTreePartial(target):
                 v.append(sibling)
-            else:
-                c2 = not partialMatch and sibling.equalsTree(target)
-                if c2:
-                    v.append(sibling)
+            elif c2 := not partialMatch and sibling.equalsTree(target):
+                v.append(sibling)
 
             ### regardless of match or not, check any children for matches
             if sibling.getFirstChild():
@@ -2416,8 +2381,8 @@ class BaseAST(AST):
         pass
 
     ### static
-    def setVerboseStringConversion(verbose,names):
-        verboseStringConversion = verbose
+    def setVerboseStringConversion(self, names):
+        verboseStringConversion = self
         tokenNames = names
     setVerboseStringConversion = staticmethod(setVerboseStringConversion)
 
@@ -2432,8 +2397,7 @@ class BaseAST(AST):
     ### return tree as lisp string - sibling included
     def toStringList(self):
         ts = self.toStringTree()
-        sib = self.getNextSibling()
-        if sib:
+        if sib := self.getNextSibling():
             ts += sib.toStringList()
         return ts
 
@@ -2445,7 +2409,7 @@ class BaseAST(AST):
         kid = self.getFirstChild()
         if kid:
             ts += " ("
-        ts += " " + self.toString()
+        ts += f" {self.toString()}"
         if kid:
             ts += kid.toStringList()
             ts += " )"
@@ -2484,7 +2448,7 @@ class CommonAST(BaseAST):
             self.setText(arg1)
             return
 
-        if isinstance(arg0,AST) or isinstance(arg0,Token):
+        if isinstance(arg0, (AST, Token)):
             self.setText(arg0.getText())
             self.setType(arg0.getType())
             return
@@ -2548,7 +2512,7 @@ class ASTPair(object):
     def toString(self):
         r = ifelse(not root,"null",self.root.getText())
         c = ifelse(not child,"null",self.child.getText())
-        return "[%s,%s]" % (r,c)
+        return f"[{r},{c}]"
 
     __str__ = toString
     __repr__ = toString
@@ -2587,7 +2551,7 @@ class ASTFactory(object):
             return t
 
         # ctor(int,something)
-        if isinstance(arg0,int) and arg2:
+        if isinstance(arg0, int):
             t = self.create(arg2)
             if t:
                 t.initialize(arg0,arg1)
@@ -2610,7 +2574,7 @@ class ASTFactory(object):
             return t
 
         # ctor(token,class)
-        if isinstance(arg0,Token) and arg1:
+        if isinstance(arg0, Token):
             assert isinstance(arg1,type)
             assert issubclass(arg1,AST)
             # this creates instance of 'arg1' using 'arg0' as
@@ -2684,17 +2648,12 @@ class ASTFactory(object):
         # first
         if self._classmap:
             try:
-                c = self._classmap[tokenType]
-                if c:
+                if c := self._classmap[tokenType]:
                     return c
             except:
                 pass
         # second
-        if self._class:
-            return self._class
-
-        # default
-        return CommonAST
+        return self._class if self._class else CommonAST
 
     ### methods that have been moved to file scope - just listed
     ### here to be somewhat consistent with original API
@@ -2738,8 +2697,7 @@ def make(*nodes):
         return None
 
     for i in xrange(0,len(nodes)):
-        node = nodes[i]
-        if node:
+        if node := nodes[i]:
             assert isinstance(node,AST)
 
     root = nodes[0]

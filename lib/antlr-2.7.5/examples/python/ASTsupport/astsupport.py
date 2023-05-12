@@ -62,16 +62,10 @@ def testHeteroTreeDup() :
     b = equalsNodeTypesList(t,dup_t)
     return a and b 
 
-def checkNode(t,c, tokenType) :
-   if not t:
-      return False
-   if t.__class__ != c:
-      return False
-
-   if t.getType()!=tokenType:
-      return False
-    
-   return True 
+def checkNode(t,c, tokenType):
+    if not t:
+       return False
+    return False if t.__class__ != c else t.getType() == tokenType 
   
 
 def equalsNodeTypesList(this, t) :

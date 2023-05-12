@@ -35,9 +35,9 @@ class Walker(antlr.TreeParser):
 
   
    def howmanysiblings(self,ast):
-      if ast == None:
+      if ast is None:
          return -1
-    
+
       r = 0
       ast = ast.getNextSibling()
       while(ast != None) :
@@ -59,12 +59,12 @@ class Walker(antlr.TreeParser):
    def traceOut(self,s,ast):
       self.depth += 1
       print(">" * self.depth)
-      print(" " + s + "( `")
-      if (ast==None):
+      print(f" {s}( `")
+      if ast is None:
          print("()")
       else:
          print(ast.toStringList())
-      print(" ')")        
+      print(" ')")
       self.depth -= 1
 
 
@@ -78,7 +78,7 @@ class TNode(antlr.CommonAST):
       kid = self.getFirstChild()
       if kid:
          ts += "{"
-      ts += " " + self.toString()
+      ts += f" {self.toString()}"
       if kid:
          ts += kid.toStringList()
          ts += "}"
@@ -94,7 +94,7 @@ class BodyNode(antlr.CommonAST):
       kid = self.getFirstChild()
       if kid:
          ts += "{"
-      ts += " " + self.toString()
+      ts += f" {self.toString()}"
       if kid:
          ts += kid.toStringList()
          ts += "}"
@@ -110,7 +110,7 @@ class ExprNode(antlr.CommonAST):
       kid = self.getFirstChild()
       if kid:
          ts += "{"
-      ts += " " + self.toString()
+      ts += f" {self.toString()}"
       if kid:
          ts += kid.toStringList()
          ts += "}"
@@ -127,7 +127,7 @@ class NumberNode(antlr.CommonAST):
       kid = self.getFirstChild()
       if kid:
          ts += "{"
-      ts += " " + self.toString()
+      ts += f" {self.toString()}"
       if kid:
          ts += kid.toStringList()
          ts += "}"
